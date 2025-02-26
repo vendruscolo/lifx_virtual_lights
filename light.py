@@ -300,7 +300,7 @@ class LIFXVirtualLight(LightEntity):
         s = saturation_ha_to_photons(s)
 
         await self._light_device.turn_on(h, s, b, k, self._zone_start, self._zone_end, self._turn_on_duration)
-
+        await self.async_update()
 
     async def async_turn_off(self, **kwargs):
         """Instruct the light to turn off."""
@@ -308,6 +308,7 @@ class LIFXVirtualLight(LightEntity):
         s = saturation_ha_to_photons(s)
 
         await self._light_device.turn_off(h, s, k, self._zone_start, self._zone_end, self._turn_off_duration)
+        await self.async_update()
 
     async def async_update(self):
         """Fetch new state data for this light."""
