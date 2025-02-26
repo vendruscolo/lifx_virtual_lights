@@ -320,10 +320,10 @@ class LIFXVirtualLight(LightEntity):
 
         zones = await self._light_device.update()
         for zone in zones[self._zone_start:self._zone_end]:
-            h = max(h, zone.hue)
-            s = max(s, zone.saturation)
-            b = max(b, zone.brightness)
-            k = max(k, zone.kelvin)
+            h = max(h, zone.get("hue", 0))
+            s = max(s, zone.get("saturation", 0))
+            b = max(b, zone.get("brightness", 1))
+            k = max(k, zone.get("kelvin", 3500))
 
         self._hsbk = HSBK(h, saturation_photons_to_ha(s), brightness_photons_to_ha(b), k)
 
