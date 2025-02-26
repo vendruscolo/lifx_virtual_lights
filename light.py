@@ -22,8 +22,6 @@ from homeassistant.components.light import (
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 import homeassistant.util.color as color_util
 
-from photons_app.executor import library_setup
-from photons_app.special import HardCodedSerials
 from photons_control.multizone import SetZones
 from photons_messages import DeviceMessages
 from photons_messages import LightMessages
