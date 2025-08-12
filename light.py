@@ -325,16 +325,28 @@ class LIFXVirtualLight(LightEntity):
             b = max(b, zone.get("brightness", 1))
             k = max(k, zone.get("kelvin", 3500))
 
-        self._hsbk = HSBK(h, saturation_photons_to_ha(s), brightness_photons_to_ha(b), k)
+        self._hsbk = HSBK(hue_photons_to_ha(h), saturation_photons_to_ha(s), brightness_photons_to_ha(b), k)
+
+def hue_photons_to_ha(value):
+    if isinstance(value, int):
+        return int(round(value / 65535)) * 360
+    else:
+        return value
 
 def brightness_photons_to_ha(value):
-    return value * 255
+    if isinstance(value, int):
+        return int(round(value / 65535)) * 255
+    else:
+        return value * 255
 
 def brightness_ha_to_photons(value):
     return value / 255
 
 def saturation_photons_to_ha(value):
-    return value * 100
+    if isinstance(value, int):
+        return int(round(value / 65535) * 100)
+    else:
+        return value * 100
 
 def saturation_ha_to_photons(value):
     return value / 100
