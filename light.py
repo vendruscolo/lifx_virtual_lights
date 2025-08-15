@@ -18,7 +18,6 @@ from homeassistant.components.light import (
     ColorMode,
     LightEntity,
     LightEntityFeature)
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 
 from photons_control.multizone import SetZones
 from photons_messages import DeviceMessages
