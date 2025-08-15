@@ -15,10 +15,9 @@ from homeassistant.components.light import (
     ATTR_HS_COLOR,
     ATTR_COLOR_TEMP,
     PLATFORM_SCHEMA,
-    SUPPORT_BRIGHTNESS,
-    SUPPORT_COLOR,
-    SUPPORT_COLOR_TEMP,
-    LightEntity)
+    ColorMode,
+    LightEntity,
+    LightEntityFeature)
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 import homeassistant.util.color as color_util
 
@@ -223,22 +222,10 @@ class LIFXVirtualLight(LightEntity):
         return self._light_device._available
 
     @property
-    def supported_features(self):
-        """Flag supported features."""
-        return SUPPORT_BRIGHTNESS | SUPPORT_COLOR | SUPPORT_COLOR_TEMP
-
-    @property
     def is_on(self):
         """Return true if light is on."""
         # Any brightness means light is on.
         return self._hsbk.b > 0
-
-    @property
-    def hs_color(self):
-        """Return the hue and saturation color value [float, float]."""
-        if self._hsbk.s:
-            return (self._hsbk.h, self._hsbk.s)
-        return None
 
     @property
     def brightness(self):
@@ -246,15 +233,28 @@ class LIFXVirtualLight(LightEntity):
         return self._hsbk.b
 
     @property
-    def color_temp(self):
-        """Return the CT color value in mireds."""
-        # If we got a saturation value, it means that light has
-        # a color set and no temperature (temperature requires
-        # light to be white, ie s == 0)
-        if self._hsbk.s:
-            return None
+    def supported_color_modes(self) -> set[ColorMode]:
+        """Return the supported color modes."""
+        return {ColorMode.COLOR_TEMP, ColorMode.HS}
 
-        return color_util.color_temperature_kelvin_to_mired(self._hsbk.k)
+    @property
+    def color_mode(self) -> ColorMode:
+        """Return the color mode of the light."""
+        if self._hsbk.s:
+            return ColorMode.HS
+        return ColorMode.COLOR_TEMP
+
+    @property
+    def hs_color(self) -> tuple[float, float] | None:
+        """Return the hs value."""
+        if self._hsbk.s:
+            return (self._hsbk.h, self._hsbk.s)
+        return None
+
+    @property
+    def color_temp_kelvin(self) -> int | None:
+        """Return the color temperature of this light in kelvin."""
+        return int(self._hsbk.k)
 
     @property
     def max_mireds(self):
