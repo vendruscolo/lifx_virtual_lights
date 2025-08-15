@@ -13,13 +13,12 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_HS_COLOR,
-    ATTR_COLOR_TEMP,
+    ATTR_COLOR_TEMP_KELVIN,
     PLATFORM_SCHEMA,
     ColorMode,
     LightEntity,
     LightEntityFeature)
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
-import homeassistant.util.color as color_util
 
 from photons_control.multizone import SetZones
 from photons_messages import DeviceMessages
@@ -257,14 +256,14 @@ class LIFXVirtualLight(LightEntity):
         return int(self._hsbk.k)
 
     @property
-    def max_mireds(self):
+    def max_color_temp_kelvin(self):
         """Return the warmest color_temp that this light supports."""
-        return math.ceil(color_util.color_temperature_kelvin_to_mired(2500))
+        return 2500
 
     @property
-    def min_mireds(self):
+    def min_color_temp_kelvin(self):
         """Return the coldest color_temp that this light supports."""
-        return math.ceil(color_util.color_temperature_kelvin_to_mired(9000))
+        return 9000
 
     async def async_turn_on(self, **kwargs):
         """Instruct the light to turn on."""
@@ -292,9 +291,9 @@ class LIFXVirtualLight(LightEntity):
         if ATTR_BRIGHTNESS in kwargs:
             b = kwargs[ATTR_BRIGHTNESS]
 
-        if ATTR_COLOR_TEMP in kwargs:
+        if ATTR_COLOR_TEMP_KELVIN in kwargs:
             s = 0
-            k = math.ceil(color_util.color_temperature_mired_to_kelvin(kwargs[ATTR_COLOR_TEMP]))
+            k = math.ceil(kwargs[ATTR_COLOR_TEMP_KELVIN])
 
         b = brightness_ha_to_photons(b)
         s = saturation_ha_to_photons(s)
