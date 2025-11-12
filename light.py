@@ -101,9 +101,6 @@ class LightDevice:
     async def update(self):
         diff = time.time() - self._last_update
 
-        # We pretend are available now
-        self._available = True
-
         if diff < SCAN_INTERVAL.total_seconds() or self._updating:
             return self._zones_data
 
@@ -111,6 +108,7 @@ class LightDevice:
 
         plans = self._sender.make_plans("zones")
         async for _, _, info in self._sender.gatherer.gather(plans, self._mac_address, find_timeout=FIND_TIMEOUT, error_catcher=self.error_catcher):
+            self._available = True
             if info is not self._sender.gatherer.Skip:
                 zones = [z for _, z in sorted(info)]
                 self._zones_data = zones
@@ -130,6 +128,7 @@ class LightDevice:
         # brightness to 0, but that causes more network traffic.
         await self.async_stop_effects()
         async for pkt in self._sender(DeviceMessages.GetPower(), self._mac_address, find_timeout=FIND_TIMEOUT):
+            self._available = True
             if pkt | DeviceMessages.StatePower:
                 if pkt.payload.level < 1:
                     await self._sender(LightMessages.SetColor(hue=h, saturation=s, brightness=0, kelvin=k), self._mac_address, find_timeout=FIND_TIMEOUT)
@@ -168,6 +167,7 @@ class LightDevice:
         else:
             await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
+        self._available = True
         self._updating = False
 
     async def async_stop_effects(self):
