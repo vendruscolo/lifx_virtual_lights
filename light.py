@@ -40,8 +40,8 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-FIND_TIMEOUT = 5
-SCAN_INTERVAL = timedelta(seconds=8)
+FIND_TIMEOUT = 7
+SCAN_INTERVAL = timedelta(seconds=10)
 
 # Validation of the user's configuration
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
