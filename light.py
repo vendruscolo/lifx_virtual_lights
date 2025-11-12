@@ -98,10 +98,10 @@ class LightDevice:
         self._last_update = time.time()
         self._zones_data = []
 
-    async def update(self, force_update=False):
+    async def update(self):
         diff = time.time() - self._last_update
 
-        if not force_update and (diff < SCAN_INTERVAL.total_seconds() or self._updating):
+        if diff < SCAN_INTERVAL.total_seconds() or self._updating:
             return self._zones_data
 
         self._updating = True
