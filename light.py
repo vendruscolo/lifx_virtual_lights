@@ -101,6 +101,9 @@ class LightDevice:
     async def update(self):
         diff = time.time() - self._last_update
 
+        # We pretend are available now
+        self._available = True
+
         if diff < SCAN_INTERVAL.total_seconds() or self._updating:
             return self._zones_data
 
@@ -109,7 +112,6 @@ class LightDevice:
         plans = self._sender.make_plans("zones")
         async for _, _, info in self._sender.gatherer.gather(plans, self._mac_address, find_timeout=FIND_TIMEOUT, error_catcher=self.error_catcher):
             if info is not self._sender.gatherer.Skip:
-                self._available = True
                 zones = [z for _, z in sorted(info)]
                 self._zones_data = zones
                 self._last_update = time.time()
