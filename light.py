@@ -150,7 +150,6 @@ class LightDevice:
 
         # Set the same HSBK, with a 0 brightness
         zone_data = {"hue": h, "saturation": s, "brightness": 0, "kelvin": k}
-        await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         # And immeediately update the cache
         self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
@@ -160,13 +159,14 @@ class LightDevice:
         # off if there's no zone lit. Get the full zones, and if there are
         # no zones lit, turn the whole thing off.
         any_zone_lit = False
-        zones = await self.update(force_update=True)
-        for zone in zones:
-            if zone.brightness:
+        for zone in self._zones_data:
+            if zone.get("brightness", 0):
                 any_zone_lit = True
 
         if any_zone_lit == False:
             await self._sender(DeviceMessages.SetPower(level=0), self._mac_address, find_timeout=FIND_TIMEOUT)
+        else:
+            await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         self._updating = False
 
