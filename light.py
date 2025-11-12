@@ -137,9 +137,8 @@ class LightDevice:
                 zone_data = {"hue": h, "saturation": s, "brightness": b, "kelvin": k}
                 await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
-                # And immeediately update the cache
+                # And immeediately update the cache (cache only, not the time)
                 self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
-                self._last_update = time.time()
 
         self._updating = False
 
@@ -151,9 +150,8 @@ class LightDevice:
         # Set the same HSBK, with a 0 brightness
         zone_data = {"hue": h, "saturation": s, "brightness": 0, "kelvin": k}
 
-        # And immeediately update the cache
+        # And immeediately update the cache (cache only, not the time)
         self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
-        self._last_update = time.time()
 
         # At this point our zones are dark, we want to turn the whole strip
         # off if there's no zone lit. Get the full zones, and if there are
