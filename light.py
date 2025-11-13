@@ -295,6 +295,7 @@ class LIFXVirtualLight(LightEntity):
             s = 0
             k = math.ceil(kwargs[ATTR_COLOR_TEMP_KELVIN])
 
+        h = hue_ha_to_photons(h)
         b = brightness_ha_to_photons(b)
         s = saturation_ha_to_photons(s)
 
@@ -304,6 +305,8 @@ class LIFXVirtualLight(LightEntity):
     async def async_turn_off(self, **kwargs):
         """Instruct the light to turn off."""
         h, s, b, k = self._hsbk
+
+        h = hue_ha_to_photons(h)
         s = saturation_ha_to_photons(s)
 
         await self._light_device.turn_off(h, s, k, self._zone_start, self._zone_end, self._turn_off_duration)
@@ -327,25 +330,19 @@ class LIFXVirtualLight(LightEntity):
         self._hsbk = HSBK(hue_photons_to_ha(h), saturation_photons_to_ha(s), brightness_photons_to_ha(b), k)
 
 def hue_photons_to_ha(value):
-    if isinstance(value, int):
-        return int(round(value / 65535)) * 360
-    else:
-        return value
+    return int(round(value / 65535)) * 360
+
+def hue_ha_to_photons(value):
+    return value / 360
 
 def brightness_photons_to_ha(value):
-    if isinstance(value, int):
-        return int(round(value / 65535)) * 255
-    else:
-        return value * 255
+    return int(round(value / 65535)) * 255
 
 def brightness_ha_to_photons(value):
     return value / 255
 
 def saturation_photons_to_ha(value):
-    if isinstance(value, int):
-        return int(round(value / 65535) * 100)
-    else:
-        return value * 100
+    return int(round(value / 65535) * 100)
 
 def saturation_ha_to_photons(value):
     return value / 100
