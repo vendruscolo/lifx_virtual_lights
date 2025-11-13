@@ -95,7 +95,7 @@ class LightDevice:
         self._mac_address = mac_address
         self._available = False
         self._updating = False
-        self._last_update = time.time()
+        self._last_update = 0
         self._zones_data = []
 
     async def update(self):
