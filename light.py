@@ -134,12 +134,13 @@ class LightDevice:
                     await self._sender(LightMessages.SetColor(hue=h, saturation=s, brightness=0, kelvin=k), self._mac_address, find_timeout=FIND_TIMEOUT)
                     await self._sender(DeviceMessages.SetPower(level=65535), self._mac_address, find_timeout=FIND_TIMEOUT)
 
-                # Send the zone data
+                # Send the new HSBK, updating the cache immediately (not the
+                # time)
                 zone_data = {"hue": h, "saturation": s, "brightness": b, "kelvin": k}
-                await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
-
-                # And immeediately update the cache (cache only, not the time)
                 self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
+
+                # And ultimately update the strip.
+                await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         self._updating = False
 
@@ -148,24 +149,24 @@ class LightDevice:
 
         await self.async_stop_effects()
 
-        # Set the same HSBK, with a 0 brightness
+        # Set the same HSBK, with a 0 brightness, updating the cache immediately
+        # (but don't update the time)
         zone_data = {"hue": h, "saturation": s, "brightness": 0, "kelvin": k}
-
-        # And immeediately update the cache (cache only, not the time)
         self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
+
+        # And now send the message to the strip.
+        await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         # At this point our zones are dark, we want to turn the whole strip
         # off if there's no zone lit. Get the full zones, and if there are
         # no zones lit, turn the whole thing off.
         any_zone_lit = False
         for zone in self._zones_data:
-            if zone.get("brightness", 0):
+            if zone.get("brightness", 0) > 0:
                 any_zone_lit = True
 
         if any_zone_lit == False:
             await self._sender(DeviceMessages.SetPower(level=0), self._mac_address, find_timeout=FIND_TIMEOUT)
-        else:
-            await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         self._available = True
         self._updating = False
