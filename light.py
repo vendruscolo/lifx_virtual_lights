@@ -111,6 +111,13 @@ class LightDevice:
             self._available = True
             if info is not self._sender.gatherer.Skip:
                 zones = [z for _, z in sorted(info)]
+
+                for zone in zones:
+                    zone["hue"]        = min(max(zone.get("hue", 0), 0), 65535)
+                    zone["brightness"] = min(max(zone.get("brightness", 0), 0), 65535)
+                    zone["saturation"] = min(max(zone.get("saturation", 0), 0), 65535)
+                    zone["kelvin"]     = min(max(zone.get("kelvin", 1500), 1500), 9000)
+
                 self._zones_data = zones
                 self._last_update = time.time()
 
