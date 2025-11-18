@@ -123,7 +123,7 @@ class LightDevice:
                     h = min(max(h, 0), 65535)
                     s = min(max(s, 0), 65535)
                     b = min(max(b, 0), 65535)
-                    k = min(max(k, 1500), 9000)
+                    k = min(max(k, 2500), 9000)
 
                     # And then convert them to ha ranges
                     h = hue_photons_to_ha(h)
