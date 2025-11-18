@@ -366,20 +366,33 @@ class LIFXVirtualLight(LightEntity):
 
         self._hsbk = HSBK(h, s, b, k)
 
+# Hue:
+# Photons stores data in 0-65535
+# Photons sends data in 0-360
+# HA works with data in 0-360
 def hue_photons_to_ha(value):
     return round(value / 65535 * 360)
 
 def hue_ha_to_photons(value):
-    return float(value) / 360
+    return float(value)
 
+# Hue:
+# Photons stores data in 0-65535
+# Photons sends data in 0-1
+# HA works with data in 0-100
+def saturation_photons_to_ha(value):
+    return round(value / 65535 * 100)
+
+def saturation_ha_to_photons(value):
+    return float(value) / 100
+
+# Brightness:
+# Photons stores data in 0-65535
+# Photons sends data in 0-1
+# HA works with data in 0-255
 def brightness_photons_to_ha(value):
     return round(value / 65535 * 255)
 
 def brightness_ha_to_photons(value):
     return float(value) / 255
 
-def saturation_photons_to_ha(value):
-    return round(value / 65535 * 100)
-
-def saturation_ha_to_photons(value):
-    return float(value) / 100
