@@ -125,6 +125,12 @@ class LightDevice:
                     b = min(max(b, 0), 65535)
                     k = min(max(k, 1500), 9000)
 
+                    # And then convert them to ha ranges
+                    h = hue_photons_to_ha(h)
+                    s = saturation_photons_to_ha(s)
+                    b = brightness_photons_to_ha(b)
+
+                    # And update the dict
                     result.append({"hue": h, "saturation": s, "brightness": b, "kelvin": k })
 
                 self._zones_data = result
@@ -137,17 +143,22 @@ class LightDevice:
     async def turn_on(self, h, s, b, k, zone_start, zone_end, duration):
         self._updating = True
 
-        # If the ligth was turned off, we want to power it and start
-        # with all zones dimmed down.
-        # Note that we're cheating here, we set the whole strip to the same
-        # color (brightness 0) so it's faster. In the past we set each zone
-        # brightness to 0, but that causes more network traffic.
         await self.async_stop_effects()
         async for pkt in self._sender(DeviceMessages.GetPower(), self._mac_address, find_timeout=FIND_TIMEOUT):
             self._available = True
             if pkt | DeviceMessages.StatePower:
+                photons_hue = hue_ha_to_photons(h)
+                photons_saturation = saturation_ha_to_photons(s)
+                photons_brightness = brightness_ha_to_photons(b)
+
+                # If the ligth was turned off, we want to power it and start
+                # with all zones dimmed down.
+                # Note that we're cheating here, we set the whole strip to the
+                # same color (brightness 0) so it's faster. In the past we set
+                # each zone brightness to 0, but that causes more network
+                # traffic.
                 if pkt.payload.level < 1:
-                    await self._sender(LightMessages.SetColor(hue=h, saturation=s, brightness=0, kelvin=k), self._mac_address, find_timeout=FIND_TIMEOUT)
+                    await self._sender(LightMessages.SetColor(hue=photons_hue, saturation=photons_saturation, brightness=0, kelvin=k), self._mac_address, find_timeout=FIND_TIMEOUT)
                     await self._sender(DeviceMessages.SetPower(level=65535), self._mac_address, find_timeout=FIND_TIMEOUT)
 
                 # Send the new HSBK, updating the cache immediately (not the
@@ -156,7 +167,13 @@ class LightDevice:
                 self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
 
                 # And ultimately update the strip.
-                await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
+                photons_zone_data = {
+                    "hue": photons_hue,
+                    "saturation": photons_saturation,
+                    "brightness": photons_brightness,
+                    "kelvin": k
+                }
+                await self._sender(SetZones([[photons_zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         self._updating = False
 
@@ -165,13 +182,24 @@ class LightDevice:
 
         await self.async_stop_effects()
 
+        b = 0
+
         # Set the same HSBK, with a 0 brightness, updating the cache immediately
         # (but don't update the time)
-        zone_data = {"hue": h, "saturation": s, "brightness": 0, "kelvin": k}
+        zone_data = {"hue": h, "saturation": s, "brightness": b, "kelvin": k}
         self._zones_data[zone_start:zone_end + 1] = [zone_data] * (zone_end - zone_start + 1)
 
         # And now send the message to the strip.
-        await self._sender(SetZones([[zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
+        photons_hue = hue_ha_to_photons(h)
+        photons_saturation = saturation_ha_to_photons(s)
+        photons_brightness = brightness_ha_to_photons(b)
+        photons_zone_data = {
+                "hue": photons_hue,
+                "saturation": photons_saturation,
+                "brightness": photons_brightness,
+                "kelvin": k
+        }
+        await self._sender(SetZones([[photons_zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
         # At this point our zones are dark, we want to turn the whole strip
         # off if there's no zone lit. Get the full zones, and if there are
@@ -311,19 +339,12 @@ class LIFXVirtualLight(LightEntity):
             s = 0
             k = math.ceil(kwargs[ATTR_COLOR_TEMP_KELVIN])
 
-        h = hue_ha_to_photons(h)
-        b = brightness_ha_to_photons(b)
-        s = saturation_ha_to_photons(s)
-
         await self._light_device.turn_on(h, s, b, k, self._zone_start, self._zone_end, self._turn_on_duration)
         await self.async_update()
 
     async def async_turn_off(self, **kwargs):
         """Instruct the light to turn off."""
         h, s, b, k = self._hsbk
-
-        h = hue_ha_to_photons(h)
-        s = saturation_ha_to_photons(s)
 
         await self._light_device.turn_off(h, s, k, self._zone_start, self._zone_end, self._turn_off_duration)
         await self.async_update()
@@ -341,24 +362,24 @@ class LIFXVirtualLight(LightEntity):
             h = max(h, zone.get("hue", 0))
             s = max(s, zone.get("saturation", 0))
             b = max(b, zone.get("brightness", 0))
-            k = max(k, zone.get("kelvin", 3500))
+            k = max(k, zone.get("kelvin", 0))
 
-        self._hsbk = HSBK(hue_photons_to_ha(h), saturation_photons_to_ha(s), brightness_photons_to_ha(b), k)
+        self._hsbk = HSBK(h, s, b, k)
 
 def hue_photons_to_ha(value):
-    return int(round(value / 65535)) * 360
+    return round(value / 65535 * 360)
 
 def hue_ha_to_photons(value):
-    return value / 360 * 65535
+    return float(value) / 360
 
 def brightness_photons_to_ha(value):
-    return int(round(value / 65535)) * 255
+    return round(value / 65535 * 255)
 
 def brightness_ha_to_photons(value):
-    return value / 255 * 65535
+    return float(value) / 255
 
 def saturation_photons_to_ha(value):
-    return int(round(value / 65535) * 100)
+    return round(value / 65535 * 100)
 
 def saturation_ha_to_photons(value):
-    return value / 100 * 65535
+    return float(value) / 100
