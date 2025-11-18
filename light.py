@@ -112,13 +112,22 @@ class LightDevice:
             if info is not self._sender.gatherer.Skip:
                 zones = [z for _, z in sorted(info)]
 
+                result = []
                 for zone in zones:
-                    zone["hue"]        = min(max(zone.get("hue", 0), 0), 65535)
-                    zone["brightness"] = min(max(zone.get("brightness", 0), 0), 65535)
-                    zone["saturation"] = min(max(zone.get("saturation", 0), 0), 65535)
-                    zone["kelvin"]     = min(max(zone.get("kelvin", 1500), 1500), 9000)
+                    h = zone.get("hue", 0)
+                    s = zone.get("saturation", 0)
+                    b = zone.get("brightness", 0)
+                    k = zone.get("kelvin", 0)
 
-                self._zones_data = zones
+                    # Clamp data from into photons ranges
+                    h = min(max(h, 0), 65535)
+                    s = min(max(s, 0), 65535)
+                    b = min(max(b, 0), 65535)
+                    k = min(max(k, 1500), 9000)
+
+                    result.append({"hue": h, "saturation": s, "brightness": b, "kelvin": k })
+
+                self._zones_data = result
                 self._last_update = time.time()
 
         self._updating = False
