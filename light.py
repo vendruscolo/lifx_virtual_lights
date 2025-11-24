@@ -143,7 +143,6 @@ class LightDevice:
     async def turn_on(self, h, s, b, k, zone_start, zone_end, duration):
         self._updating = True
 
-        await self.async_stop_effects()
         async for pkt in self._sender(DeviceMessages.GetPower(), self._mac_address, find_timeout=FIND_TIMEOUT):
             self._available = True
             if pkt | DeviceMessages.StatePower:
@@ -180,8 +179,6 @@ class LightDevice:
     async def turn_off(self, h, s, k, zone_start, zone_end, duration):
         self._updating = True
 
-        await self.async_stop_effects()
-
         b = 0
 
         # Set the same HSBK, with a 0 brightness, updating the cache immediately
@@ -214,9 +211,6 @@ class LightDevice:
 
         self._available = True
         self._updating = False
-
-    async def async_stop_effects(self):
-        await self._sender(MultiZoneMessages.SetMultiZoneEffect(type=MultiZoneEffectType.OFF), self._mac_address, find_timeout=FIND_TIMEOUT)
 
     def error_catcher(self, error):
         # We got an error. Disable this entity, and hope it'll come
