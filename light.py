@@ -40,7 +40,11 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# A const used for timeouts when communicating with LIFX devices
 FIND_TIMEOUT = 7
+
+# A const used for the polling interval. HA will call async_update every time
+# this ticks.
 SCAN_INTERVAL = timedelta(seconds=10)
 
 # Validation of the user's configuration
