@@ -97,22 +97,15 @@ class LightDevice:
     def __init__(self, sender, mac_address):
         self._sender = sender
         self._mac_address = mac_address
-        self._available = False
-        self._updating = False
-        self._last_update = 0
+        self._did_perform_initial_update = False
         self._zones_data = []
 
     async def update(self):
-        diff = time.time() - self._last_update
-
-        if diff < SCAN_INTERVAL.total_seconds() or self._updating:
+        if self._did_perform_initial_update:
             return self._zones_data
-
-        self._updating = True
 
         plans = self._sender.make_plans("zones")
         async for _, _, info in self._sender.gatherer.gather(plans, self._mac_address, find_timeout=FIND_TIMEOUT, error_catcher=self.error_catcher):
-            self._available = True
             if info is not self._sender.gatherer.Skip:
                 zones = [z for _, z in sorted(info)]
 
@@ -138,17 +131,13 @@ class LightDevice:
                     result.append({"hue": h, "saturation": s, "brightness": b, "kelvin": k })
 
                 self._zones_data = result
-                self._last_update = time.time()
 
-        self._updating = False
+        self._did_perform_initial_update = True
 
         return self._zones_data
 
     async def turn_on(self, h, s, b, k, zone_start, zone_end, duration):
-        self._updating = True
-
         async for pkt in self._sender(DeviceMessages.GetPower(), self._mac_address, find_timeout=FIND_TIMEOUT):
-            self._available = True
             if pkt | DeviceMessages.StatePower:
                 photons_hue = hue_ha_to_photons(h)
                 photons_saturation = saturation_ha_to_photons(s)
@@ -178,11 +167,7 @@ class LightDevice:
                 }
                 await self._sender(SetZones([[photons_zone_data, zone_end - zone_start + 1]], zone_index=zone_start, duration=duration), self._mac_address, find_timeout=FIND_TIMEOUT)
 
-        self._updating = False
-
     async def turn_off(self, h, s, k, zone_start, zone_end, duration):
-        self._updating = True
-
         b = 0
 
         # Set the same HSBK, with a 0 brightness, updating the cache immediately
@@ -213,15 +198,12 @@ class LightDevice:
         if any_zone_lit == False:
             await self._sender(DeviceMessages.SetPower(level=0), self._mac_address, find_timeout=FIND_TIMEOUT)
 
-        self._available = True
-        self._updating = False
-
     def error_catcher(self, error):
         # We got an error. Disable this entity, and hope it'll come
         # back later. Exceptions here are usually timeouts (device was
         # working and went offline after HA started) or device isn't
         # available at all (it was never discovered).
-        self._available = False
+        self._did_perform_initial_update = False
         _LOGGER.error(f"Received error while updating color zones for {self._mac_address}. Possibly offline? Error: {error}")
 
 class LIFXVirtualLight(LightEntity):
@@ -260,7 +242,7 @@ class LIFXVirtualLight(LightEntity):
     @property
     def available(self):
         """Indicate if Home Assistant is able to read the state and control the underlying device."""
-        return self._light_device._available
+        return self._light_device._did_perform_initial_update
 
     @property
     def is_on(self):
