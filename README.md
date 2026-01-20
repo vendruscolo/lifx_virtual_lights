@@ -1,3 +1,10 @@
+# EOL
+
+This project is no longer being maintained.
+
+I was having connectivity and reliability issues with LIFX controllers, they would drop from the network unexpectedly.
+I decided to move on to something else, and I'm now using a ESP32 with WLED flashed, driving the original strips.
+
 # LIFX Virtual Light (for LIFX Z)
 
 This integration shows how you would go ahead and integrate a physical light into Home Assistant.
